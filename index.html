@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neuron IA · Comprendre les Réseaux de Neurones</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <h1><span class="grad">NEURON IA</span></h1>
+  <p class="subtitle">Comprendre comment un réseau de neurones apprend à partir d'un texte</p>
+</header>
+
+<div class="steps">
+  <div class="steps-label">Processus</div>
+  <div class="step active" id="step1"><div class="step-num">1</div><span>Importer</span></div>
+  <div class="step-sep"></div>
+  <div class="step" id="step2"><div class="step-num">2</div><span>Embeddings</span></div>
+  <div class="step-sep"></div>
+  <div class="step" id="step3"><div class="step-num">3</div><span>Entraîner</span></div>
+  <div class="step-sep"></div>
+  <div class="step" id="step4"><div class="step-num">4</div><span>Générer</span></div>
+</div>
+
+<!-- ══ INTRO ══ -->
+<div class="markov-intro">
+  <div class="markov-intro-title">Processus d'apprentissage d'un réseau de neurones sur un texte</div>
+  <p>Là où <a class="markov-link" href="https://pseudo.github.io/markov_ia/" target="_blank">MARKOV IA</a> construit une matrice de transition <em>explicite</em> et visible, NEURON IA apprend à prédire le mot suivant en <em>compressant implicitement</em> cette information dans les poids d'un petit réseau de neurones.</p>
+  <p class="markov-url">MARKOV IA : <a class="markov-link" href="https://pseudo.github.io/markov_ia/" target="_blank">https://pseudo.github.io/markov_ia/</a></p>
+  <p>Ce processus se décompose en 4 étapes :</p>
+  <ul class="process-steps-list">
+    <li><strong>Étape 1 · Importer</strong> un document de votre choix en format compatible</li>
+    <li><strong>Étape 2 · Embeddings</strong> — visualiser comment chaque mot devient un vecteur dans un espace numérique</li>
+    <li><strong>Étape 3 · Entraîner</strong> le réseau et observer les poids se ajuster en temps réel</li>
+    <li><strong>Étape 4 · Générer</strong> du texte avec le modèle appris, et comparer avec l'approche Markov</li>
+  </ul>
+  <p>Cette expérience donne une intuition concrète sur ce que signifie <em>« apprendre »</em> pour une machine, et pourquoi les réseaux de neurones surpassent les tenseurs explicites dès que le vocabulaire grandit.</p>
+</div>
+
+<div class="pedagogy">
+  <h3>Pourquoi un réseau de neurones ?</h3>
+  <p>La chaîne de Markov du 1er ordre stocke explicitement une matrice V×V de probabilités de transition. Pour un vocabulaire de 10 000 mots, cela représente déjà 100 millions de cases. À l'ordre 2, V³ = 1 000 milliards — inutilisable.</p>
+  <p>Un réseau de neurones contourne ce problème en apprenant une <strong style="color:var(--accent)">fonction d'approximation</strong>: au lieu de stocker toutes les probabilités, il apprend à les calculer à partir d'une représentation compacte des mots — les <strong style="color:var(--accent)">embeddings</strong>.</p>
+  <div class="formula">P(mot suivant | contexte) ≈ softmax( W₂ · tanh( W₁ · embedding(mot) + b₁ ) + b₂ )</div>
+  <p>Les poids W₁, W₂, b₁, b₂ sont ajustés à chaque exemple pour que la probabilité du bon mot augmente — c'est la <strong style="color:var(--accent)">rétropropagation du gradient</strong>.</p>
+</div>
+
+<!-- ══ ÉTAPE 1 ══ -->
+<div class="card">
+  <div class="card-title"><div class="dot"></div> Étape 1 · Importer un document</div>
+  <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+    <span class="dropzone-icon">📄</span>
+    <h2>Glissez votre fichier ici</h2>
+    <p>ou cliquez pour parcourir</p>
+    <div class="formats">
+      <span class="tag txt">.txt</span>
+      <span class="tag pdf">.pdf</span>
+      <span class="tag docx">.docx</span>
+      <span class="tag pptx">.pptx</span>
+      <span class="tag data">.csv</span>
+      <span class="tag data">.xlsx</span>
+    </div>
+    <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.pptx,.csv,.xlsx">
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="status-line" id="fileStatus" style="display:none">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText"></span>
+  </div>
+</div>
+
+<!-- ══ ÉTAPE 2 · EMBEDDINGS ══ -->
+<div class="section card" id="sectionEmbed">
+  <div class="card-title"><div class="dot" style="background:var(--accent3)"></div> Étape 2 · Embeddings — les mots comme vecteurs</div>
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="embed-config" style="margin-top:1.2rem">
+    <div class="filter-panel">
+      <div class="filter-group">
+        <label>Dimension embedding</label>
+        <select id="embedDim">
+          <option value="4">4</option>
+          <option value="8" selected>8</option>
+          <option value="16">16</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Mots affichés</label>
+        <input type="number" id="embedTopN" value="30" min="5" max="100">
+      </div>
+      <button class="btn btn-primary" id="btnInitEmbeds">Initialiser les embeddings</button>
+    </div>
+  </div>
+
+  <div id="embedSection" style="display:none;margin-top:1rem">
+    <div class="embed-info">
+      Les embeddings sont initialisés <strong>aléatoirement</strong> — ils n'ont pas encore de sens. L'entraînement (étape 3) les organisera de sorte que les mots qui apparaissent dans des contextes similaires se rapprochent dans cet espace.
+    </div>
+    <div class="embed-grid-wrap">
+      <div class="embed-grid-title">Vecteurs d'embedding — <span id="embedDimLabel">8</span> dimensions par mot</div>
+      <div class="embed-table-container" id="embedTable"></div>
+    </div>
+    <div class="embed-scatter-wrap">
+      <div class="embed-grid-title">Projection 2D des embeddings (PCA simplifiée)</div>
+      <canvas id="embedCanvas" width="700" height="380"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ÉTAPE 3 · ENTRAÎNEMENT ══ -->
+<div class="section card" id="sectionTrain">
+  <div class="card-title"><div class="dot" style="background:var(--accent4)"></div> Étape 3 · Entraîner le réseau</div>
+
+  <div class="filter-panel">
+    <div class="filter-group">
+      <label>Neurones cachés</label>
+      <select id="hiddenSize">
+        <option value="16">16</option>
+        <option value="32" selected>32</option>
+        <option value="64">64</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Taux d'apprentissage</label>
+      <select id="learningRate">
+        <option value="0.5">0.5 (rapide)</option>
+        <option value="0.1" selected>0.1 (normal)</option>
+        <option value="0.01">0.01 (lent)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Itérations</label>
+      <input type="number" id="trainIter" value="200" min="50" max="1000">
+    </div>
+    <button class="btn btn-primary" id="btnTrain" style="align-self:flex-end">Entraîner</button>
+    <button class="btn btn-ghost" id="btnReset" style="align-self:flex-end" disabled>Réinitialiser</button>
+  </div>
+
+  <div id="trainSection" style="display:none;margin-top:1rem">
+    <div class="train-layout">
+      <div class="loss-chart-wrap">
+        <div class="embed-grid-title">Courbe de loss — erreur au fil des itérations</div>
+        <canvas id="lossCanvas" width="500" height="220"></canvas>
+      </div>
+      <div class="network-viz-wrap">
+        <div class="embed-grid-title">Architecture du réseau</div>
+        <canvas id="networkCanvas" width="320" height="220"></canvas>
+      </div>
+    </div>
+    <div class="train-stats" id="trainStats"></div>
+  </div>
+</div>
+
+<!-- ══ ÉTAPE 4 · GÉNÉRATION ══ -->
+<div class="section card" id="sectionGenerate">
+  <div class="card-title"><div class="dot" style="background:var(--accent2)"></div> Étape 4 · Générer du texte</div>
+  <div class="input-row">
+    <div class="input-group">
+      <label>Mot de départ</label>
+      <input type="text" id="seedWord" placeholder="Entrez un mot connu…">
+    </div>
+    <div class="input-group" style="flex:0;min-width:130px">
+      <label>Nb. de mots (1–50)</label>
+      <input type="number" id="repeatCount" value="10" min="1" max="50">
+    </div>
+    <div class="input-group" style="flex:0;min-width:130px">
+      <label>Température</label>
+      <select id="temperature">
+        <option value="0">0 — Déterministe</option>
+        <option value="0.5" selected>0.5 — Équilibré</option>
+        <option value="1">1.0 — Créatif</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="btnGenerate" style="align-self:flex-end">Générer</button>
+  </div>
+  <div class="result-box" id="resultBox">
+    <span style="color:var(--muted);font-size:.85rem">Le texte généré apparaîtra ici…</span>
+  </div>
+  <div style="margin-top:.75rem;font-size:.78rem;color:var(--muted);line-height:1.6">
+    <strong style="color:var(--accent)">Violet</strong> = mot de départ &nbsp;·&nbsp;
+    <strong style="color:var(--accent3)">Vert</strong> = mots générés &nbsp;·&nbsp;
+    <strong style="color:var(--accent2)">Rose</strong> = mot inconnu
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong style="color:var(--accent4)">Température</strong> : 0 = toujours le plus probable · 1 = échantillonnage aléatoire pondéré
+  </div>
+</div>
+
+<!-- ══ THÉORIE ══ -->
+<div class="theory-section">
+  <div class="theory-header">
+    <h2>Fondements Théoriques</h2>
+    <p>Des embeddings à la rétropropagation, comprendre les briques fondamentales de l'apprentissage automatique</p>
+  </div>
+
+  <div class="theory-block">
+    <h3>Le vecteur de mot — l'embedding</h3>
+    <p>Dans MARKOV IA, chaque mot est représenté par un simple index — un numéro dans le vocabulaire. Cette représentation ne porte aucune information sur la <strong>signification</strong> du mot.</p>
+    <p>Un embedding associe à chaque mot un vecteur dense de N nombres réels. Ce vecteur vit dans un espace de dimension N où la <strong>proximité géométrique reflète la similarité sémantique</strong> : après entraînement, "chat" et "chien" sont proches, "chat" et "voiture" sont loin.</p>
+    <div class="theory-formula">embedding("chat") = [0.32, -0.71, 0.18, 0.95, -0.44, 0.62, -0.29, 0.11]</div>
+    <p>Au départ ces valeurs sont aléatoires. L'entraînement les organise progressivement pour que le réseau fasse le moins d'erreurs possible sur la prédiction du mot suivant.</p>
+    <div class="highlight-box">
+      <strong>Lien avec MARKOV IA :</strong> là où la matrice de Markov stockait une ligne entière de probabilités pour chaque mot, l'embedding compresse l'information du mot en N nombres — beaucoup plus compact, et généralisable à des mots jamais vus ensemble.
+    </div>
+  </div>
+
+  <div class="theory-block" style="border-color:rgba(109,255,204,.2)">
+    <h3>L'architecture du réseau — du mot à la probabilité</h3>
+    <p>Le réseau utilisé ici est un <strong>perceptron multicouche</strong> (MLP) à une couche cachée, l'architecture fondatrice introduite par Rosenblatt en 1958 et généralisée par Rumelhart et Hinton en 1986.</p>
+    <div class="theory-formula">h = tanh( W₁ · e(mot) + b₁ )&nbsp;&nbsp;&nbsp;&nbsp;[couche cachée]
+y = softmax( W₂ · h + b₂ )&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[distribution de probabilités]</div>
+    <p>La fonction <strong>softmax</strong> convertit les scores bruts du réseau en probabilités qui somment exactement à 1 — comme la normalisation ligne de la matrice de Markov, mais calculée dynamiquement à partir des poids appris.</p>
+    <div class="theory-formula">softmax(zᵢ) = exp(zᵢ) / Σⱼ exp(zⱼ)</div>
+    <p>La fonction <strong>tanh</strong> introduit la non-linéarité essentielle : sans elle, empiler des couches ne ferait qu'une seule transformation linéaire, incapable de capturer des patterns complexes.</p>
+  </div>
+
+  <div class="theory-block" style="border-color:rgba(255,217,109,.2)">
+    <h3>La rétropropagation — comment le réseau apprend</h3>
+    <p>À chaque exemple (mot_i → mot_j), le réseau prédit une distribution de probabilités. L'erreur est mesurée par la <strong>cross-entropie</strong> :</p>
+    <div class="theory-formula">Loss = −log( P(mot_j | mot_i) )</div>
+    <p>Si le réseau est très sûr du bon mot, le loss est proche de 0. S'il se trompe, le loss est élevé. La rétropropagation calcule le gradient de cette erreur par rapport à chaque poids du réseau, puis ajuste tous les poids dans la direction qui réduit l'erreur.</p>
+    <div class="theory-formula">W ← W − α · ∂Loss/∂W</div>
+    <p>α est le taux d'apprentissage : trop grand, le réseau oscille ; trop petit, il converge lentement. Répété des milliers de fois sur tous les exemples, ce processus fait descendre la courbe de loss visible à l'étape 3.</p>
+    <div class="highlight-box" style="border-color:rgba(255,217,109,.25);background:linear-gradient(135deg,rgba(255,217,109,.05),rgba(124,109,255,.04));color:var(--accent4)">
+      <strong>L'intuition clé :</strong> la matrice de Markov est calculée en une passe sur le texte. Le réseau de neurones fait des centaines de passes, corrigeant ses poids à chaque itération — c'est ce processus itératif qui lui permet d'apprendre des représentations bien plus riches.
+    </div>
+  </div>
+
+  <div class="theory-block" style="border-color:rgba(255,109,155,.2)">
+    <h3>Récapitulatif historique</h3>
+    <div class="theory-timeline">
+      <div class="timeline-item">
+        <div class="timeline-year">McCulloch &amp; Pitts · 1943</div>
+        <div class="timeline-title">Le neurone formel</div>
+        <div class="timeline-desc">Premier modèle mathématique d'un neurone artificiel. Montre qu'une fonction pondérée à seuil peut réaliser n'importe quelle opération logique.</div>
+      </div>
+      <div class="timeline-item order2">
+        <div class="timeline-year">Rosenblatt · 1958</div>
+        <div class="timeline-title">Le Perceptron</div>
+        <div class="timeline-desc">Premier réseau capable d'ajuster ses propres poids à partir d'exemples. Ancêtre direct de ce que fait cette application à l'étape 3.</div>
+      </div>
+      <div class="timeline-item order2">
+        <div class="timeline-year">Rumelhart, Hinton &amp; Williams · 1986</div>
+        <div class="timeline-title">La rétropropagation du gradient</div>
+        <div class="timeline-desc">Algorithme permettant d'entraîner des réseaux à plusieurs couches. Débloque l'apprentissage profond et reste l'algorithme central de tous les LLMs modernes.</div>
+      </div>
+      <div class="timeline-item ordern">
+        <div class="timeline-year">Bengio et al. · 2003</div>
+        <div class="timeline-title">Le modèle de langage neuronal</div>
+        <div class="timeline-desc">Première application directe du MLP à la prédiction de mots avec embeddings appris. Exactement ce que cette application implémente.</div>
+      </div>
+      <div class="timeline-item ordern">
+        <div class="timeline-year">Transformers · 2017 → LLMs</div>
+        <div class="timeline-title">Le même principe, à très grande échelle</div>
+        <div class="timeline-desc">GPT, Claude et tous les LLMs modernes font toujours la même chose : P(mot | contexte) avec des embeddings et de la rétropropagation — mais avec des contextes de centaines de milliers de tokens et des milliards de poids.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theory-block" style="border-color:rgba(109,255,204,.25)">
+    <h3>Ce que cette application fait concrètement</h3>
+    <div class="highlight-box" style="border-color:rgba(109,255,204,.25);background:linear-gradient(135deg,rgba(109,255,204,.05),rgba(124,109,255,.04));color:var(--accent3);margin-top:0">
+      <strong>Le tenseur implicite :</strong> si vous interrogiez ce réseau sur toutes les paires de mots possibles, vous obtiendriez une matrice de probabilités similaire à celle de MARKOV IA. Mais cette matrice n'existe nulle part en mémoire — elle est <strong>distribuée dans les poids W₁, W₂ et les embeddings</strong>. C'est la compression implicite que les claviers de smartphone, Word2Vec, et tous les LLMs modernes utilisent.
+    </div>
+  </div>
+</div>
+  <div class="theory-block" style="border-color:rgba(109,255,204,.2)">
+    <h3>Ce qui manque pour arriver aux LLMs actuels</h3>
+    <p>NEURON IA implémente le modèle de Bengio (2003) : prédire le mot suivant à partir d'un seul mot, avec des embeddings appris. Cinq briques séparent encore ce modèle de GPT ou Claude.</p>
+    <p><strong>Le contexte long.</strong> Ce réseau ne voit qu'un mot. Un LLM moderne en voit des centaines de milliers simultanément, grâce aux Transformers (2017).</p>
+    <p><strong>L'attention.</strong> Même avec un contexte long, tous les mots passés ne sont pas également pertinents. L'attention permet au réseau de pondérer dynamiquement lesquels regarder pour chaque prédiction.</p>
+    <p><strong>L'échelle.</strong> Ce réseau a quelques milliers de paramètres. GPT-4 en a estimé mille milliards. Au-delà d'un certain seuil, des capacités qualitativement nouvelles émergent : raisonnement, analogie, compréhension implicite du contexte.</p>
+    <p><strong>Le pré-entraînement.</strong> Les LLMs sont entraînés sur des dizaines de milliards de pages. Ce volume est ce qui donne aux embeddings une représentation riche du monde, bien au-delà d'un seul document.</p>
+    <p><strong>L'alignement.</strong> Un modèle pré-entraîné sait prédire du texte, mais n'est pas nécessairement utile. Le RLHF (retour humain) le transforme en assistant conversationnel.</p>
+    <div class="highlight-box" style="margin-top:1rem">
+      De la matrice de MARKOV IA aux milliards de poids de Claude, la formule reste identique : <strong>P(mot suivant | contexte)</strong>. Seule la richesse du contexte change.
+    </div>
+  </div>
+
+</div><!-- /theory-section -->
+
+<footer>Neuron IA · LJL 2026 · Réseaux de neurones &amp; Embeddings</footer>
+</div><!-- /wrapper -->
+
+<div class="notif" id="notif">
+  <span class="notif-icon" id="notifIcon">✅</span>
+  <span id="notifText"></span>
+</div>
+
+<!-- ═══ PARSEURS EXTERNES ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="assets/script.js"></script>
+</body>
+</html>
