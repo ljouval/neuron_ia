@@ -28,7 +28,9 @@ function notify(msg, icon = '✅', duration = 3000) {
 // VIZ TOGGLES
 // ═══════════════════════════════════════════════════════════════
 ['togWeights', 'togEmbeds', 'togSignal'].forEach(id => {
-  document.getElementById(id).addEventListener('click', () => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', () => {
     const key = id === 'togWeights' ? 'weights' : id === 'togEmbeds' ? 'embeds' : 'signal';
     vizState[key] = !vizState[key];
     document.getElementById(id).classList.toggle('active', vizState[key]);
@@ -450,7 +452,8 @@ function startTraining() {
   let iter = 0;
   const batchSize = Math.min(50, pairs.length);
   const totalSteps = iterations;
-  const vizRefresh = parseInt(document.getElementById('vizRefresh').value) || 15;
+  const vizRefreshEl = document.getElementById('vizRefresh');
+  const vizRefresh = vizRefreshEl ? (parseInt(vizRefreshEl.value) || 15) : 15;
 
   function step() {
     if (iter >= totalSteps) {
